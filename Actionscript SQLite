@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="All HCC Clubs"
+		creationComplete="createDatabase()">
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import mx.collections.ArrayCollection;
+			import mx.rpc.events.ResultEvent;
+			import spark.events.IndexChangeEvent;
+			
+			public var dbFile:File;
+			public var dbConnection:SQLConnection;
+			public var selectQuery:SQLStatement;
+			private function createDatabase():void
+			{
+				dbFile = File.applicationDirectory.resolvePath("database.db");
+				dbConnection = new SQLConnection();
+				dbConnection.addEventListener(SQLEvent.OPEN, onDatabaseOpen);
+				dbConnection.addEventListener(SQLEvent.CLOSE, onDatabaseClose);
+				dbConnection.openAsync(dbFile);
+			}
+			
+			private function onDatabaseOpen(evt:SQLEvent):void
+			{
+				trace("Database opened");
+				// table create if not exists
+				var statement:SQLStatement = new SQLStatement();
+				statement.sqlConnection = dbConnection;
+				statement.text = "CREATE TABLE IF NOT EXISTS highlineClubs (id INTEGER PRIMARY KEY AUTOINCREMENT, ";
+				statement.text += "clubName TEXT, clubEmail TEXT, clubPresident TEXT, presidentPhone TEXT, ";
+				statement.text += "presidentEmail TEXT, startDate TEXT, meetingDay TEXT, meetingFreq TEXT, ";
+				statement.text += "meetingTime TEXT, allMeetingDates TEXT, meetingLocation TEXT, ";
+				statement.text += "clubAdvisor TEXT, CLC TEXT, clubStatus TEXT)";
+ 				statement.execute();				
+				// Select for List
+				selectQuery = new SQLStatement();
+				selectQuery.sqlConnection = dbConnection;
+				selectQuery.text = "SELECT clubName, id  FROM highlineClubs ORDER BY clubName ASC";
+				selectQuery.addEventListener(SQLEvent.RESULT, onQueryResult);
+				selectQuery.execute();
+			}
+			
+			private function onQueryResult(evt:SQLEvent):void
+			{	//Populate List from data
+				clubList.dataProvider = new ArrayCollection(selectQuery.getResult().data);
+			}
+			
+			
+			private function onDatabaseClose(evt:SQLEvent):void
+			{
+				trace("Database closed");
+			}
+			
+			private function refresh_clickHandler(event:MouseEvent):void
+			{
+				navigator.pushView(RefreshClubs);	
+			}
+			
+			protected function clubList_changeHandler(event:IndexChangeEvent):void
+			{	 
+				navigator.pushView(views.ClubInfo, clubList.selectedItem);
+			}	
+			
+		]]>
+	</fx:Script>	
+
+	
+	<s:List id="clubList" change="clubList_changeHandler(event)" 
+			left="0" right="0" top="0" bottom="0"
+			labelField="clubName">	
+	</s:List>
+
+
+</s:View>
